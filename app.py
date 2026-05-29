@@ -499,5 +499,36 @@ def api_dns_test():
         "success": True,
         "results": results
     })
+
+@app.route("/api/http-test")
+def http_test():
+    import requests
+
+    urls = [
+        "https://megaup.cc",
+        "https://megaup.live"
+    ]
+
+    results = {}
+
+    for url in urls:
+        try:
+            r = requests.get(
+                url,
+                timeout=15,
+                allow_redirects=True
+            )
+
+            results[url] = {
+                "status": r.status_code,
+                "final_url": r.url
+            }
+
+        except Exception as e:
+            results[url] = {
+                "error": str(e)
+            }
+
+    return jsonify(results)
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
