@@ -469,6 +469,8 @@ def api_servers(ep_token):
 def api_source(link_id):
     res = resolve_source(link_id)
     return (jsonify(res), 500) if "error" in res else jsonify({"success": True, **res})
+
+
 @app.route("/api/dns-test", methods=["GET"])
 def api_dns_test():
     import socket
@@ -500,10 +502,9 @@ def api_dns_test():
         "results": results
     })
 
-@app.route("/api/http-test")
-def http_test():
-    import requests
 
+@app.route("/api/http-test", methods=["GET"])
+def api_http_test():
     urls = [
         "https://megaup.cc",
         "https://megaup.live"
@@ -516,12 +517,14 @@ def http_test():
             r = requests.get(
                 url,
                 timeout=15,
-                allow_redirects=True
+                allow_redirects=True,
+                headers=HEADERS
             )
 
             results[url] = {
                 "status": r.status_code,
-                "final_url": r.url
+                "final_url": r.url,
+                "content_type": r.headers.get("content-type", "")
             }
 
         except Exception as e:
@@ -529,9 +532,56 @@ def http_test():
                 "error": str(e)
             }
 
-    return jsonify(results)
-    @app.route("/api/debug-source/<link_id>")
-def debug_source(link_id):
-    return jsonify(resolve_source(link_id))
+    return jsonify({
+        "success": True,
+        "results": results
+    })
+
+
+@app.route("/api/debug-source/<link_id>", methods=["GET"])
+def api_debug_source(link_id):
+    res = resolve_source(link_id)
+    return jsonify({
+        "success": "error" not in res,
+        "debug": res
+    })
+
+
+@app.route("/api/url-test", methods=["GET"])
+def api_url_test():
+    url = request.args.get("url", "").strip()
+
+    if not url:
+        return jsonify({"success": False, "error": "url query parameter is required"}), 400
+
+    try:
+        r = requests.get(
+            url,
+            timeout=15,
+            allow_redirects=True,
+            headers=HEADERS
+        )
+
+        preview = ""
+        content_type = r.headers.get("content-type", "")
+
+        if "text" in content_type or "json" in content_type or "mpegurl" in content_type or url.endswith(".m3u8") or url.endswith(".vtt"):
+            preview = r.text[:1000]
+
+        return jsonify({
+            "success": True,
+            "status": r.status_code,
+            "final_url": r.url,
+            "content_type": content_type,
+            "preview": preview
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
