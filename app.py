@@ -469,6 +469,35 @@ def api_servers(ep_token):
 def api_source(link_id):
     res = resolve_source(link_id)
     return (jsonify(res), 500) if "error" in res else jsonify({"success": True, **res})
+@app.route("/api/dns-test", methods=["GET"])
+def api_dns_test():
+    import socket
 
+    domains = [
+        "rrr.megaup.cc",
+        "xm8.megaup.cc",
+        "megaup.cc",
+        "megaup.live"
+    ]
+
+    results = {}
+
+    for domain in domains:
+        try:
+            ip = socket.gethostbyname(domain)
+            results[domain] = {
+                "dns": True,
+                "ip": ip
+            }
+        except Exception as e:
+            results[domain] = {
+                "dns": False,
+                "error": str(e)
+            }
+
+    return jsonify({
+        "success": True,
+        "results": results
+    })
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
