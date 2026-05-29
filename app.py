@@ -530,5 +530,8 @@ def http_test():
             }
 
     return jsonify(results)
+    @app.route("/api/debug-source/<link_id>")
+def debug_source(link_id):
+    return jsonify(resolve_source(link_id))
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
